@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  AggregateTable:
+    Properties:
+      PrimaryKey:
+        Name: EventId
+        Type: String
+    Type: AWS::Serverless::SimpleTable
+  AllowDyanmoTables:
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Action:
+          - dynamodb:BatchGet*
+          - dynamodb:DescribeStream
+          - dynamodb:DescribeTable
+          - dynamodb:Get*
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:BatchWrite*
+          - dynamodb:CreateTable
+          - dynamodb:Delete*
+          - dynamodb:Update*
+          - dynamodb:PutItem
+          Effect: Allow
+          Resource:
+          - '*'
+        Version: 2012-10-17
+    Type: AWS::IAM::ManagedPolicy
+  ChangeEventStream:
+    Properties:
+      ShardCount: 1
+    Type: AWS::Kinesis::Stream
+  LambdaFunction:
+    Properties:
+      CodeUri: s3://sam-temp-bucket-zim/d44aee7e69c5db96801f3fa68dea2f09
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: AggregateTable
+      Events:
+        Stream:
+          Properties:
+            BatchSize: 100
+            StartingPosition: LATEST
+            Stream:
+              Fn::GetAtt:
+              - ChangeEventStream
+              - Arn
+          Type: Kinesis
+      Handler: index.handler
+      Policies:
+      - Ref: AllowDyanmoTables
+      Runtime: nodejs8.10
+      Timeout: 10
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31

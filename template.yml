@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/AggregatorConsumer
+      Handler: index.handler
+      Runtime: nodejs8.10
+      Timeout: 10
+      Events:
+        Stream:
+          Type: Kinesis
+          Properties:
+            Stream: !GetAtt ChangeEventStream.Arn
+            BatchSize: 100
+            StartingPosition: LATEST
+      Policies:
+        - !Ref AllowDyanmoTables
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AggregateTable
+
+  ChangeEventStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      ShardCount: 1
+
+  AggregateTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: EventId
+        Type: String
+
+
+############### IAM Resources #################################
+
+  AllowDyanmoTables:
+      Type: AWS::IAM::ManagedPolicy
+      Properties:
+        PolicyDocument: 
+          Version: 2012-10-17
+          Statement: 
+            - Effect: Allow
+              Action:
+                - "dynamodb:BatchGet*"
+                - "dynamodb:DescribeStream"
+                - "dynamodb:DescribeTable"
+                - "dynamodb:Get*"
+                - "dynamodb:Query"
+                - "dynamodb:Scan"
+                - "dynamodb:BatchWrite*"
+                - "dynamodb:CreateTable"
+                - "dynamodb:Delete*"
+                - "dynamodb:Update*"
+                - "dynamodb:PutItem"       
+              Resource:
+                - "*"
+                #- !Join [ "", [ 'arn:aws:dynamodb:::table/', !Ref AggregateTable ] ]  
