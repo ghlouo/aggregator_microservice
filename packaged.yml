@@ -1,12 +1,47 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Resources:
-  AggregateTable:
+  LambdaFunctionContainers:
     Properties:
-      PrimaryKey:
-        Name: EventId
-        Type: String
-    Type: AWS::Serverless::SimpleTable
-  AllowDyanmoTables:
+      CodeUri: s3://sam-temp-bucket-zim/d44aee7e69c5db96801f3fa68dea2f09
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: dbTableContainers
+      Events:
+        Stream:
+          Properties:
+            BatchSize: 100
+            StartingPosition: LATEST
+            Stream:
+              Fn::GetAtt:
+              - kinesisEventStream
+              - Arn
+          Type: Kinesis
+      Handler: index.handler
+      Policies:
+      - Ref: dbPolicyTables
+      Runtime: nodejs8.10
+      Timeout: 10
+    Type: AWS::Serverless::Function
+  LambdaFunctionRules:
+    Properties:
+      CodeUri: s3://sam-temp-bucket-zim/b6ed8f93e594c3cfd50eade5b46d898a
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: dbTableRules
+      Events:
+        CreateRule:
+          Properties:
+            Method: post
+            Path: /rules
+          Type: Api
+      Handler: create.create
+      Policies:
+      - Ref: dbPolicyTables
+      Runtime: python3.7
+    Type: AWS::Serverless::Function
+  dbPolicyTables:
     Properties:
       PolicyDocument:
         Statement:
@@ -27,55 +62,20 @@ Resources:
           - '*'
         Version: 2012-10-17
     Type: AWS::IAM::ManagedPolicy
-  ChangeEventStream:
+  dbTableContainers:
     Properties:
-      ShardCount: 1
-    Type: AWS::Kinesis::Stream
-  CreateRuleFunction:
-    Properties:
-      CodeUri: s3://sam-temp-bucket-zim/b6ed8f93e594c3cfd50eade5b46d898a
-      Environment:
-        Variables:
-          TABLE_NAME:
-            Ref: RulesTable
-      Events:
-        CreateRule:
-          Properties:
-            Method: post
-            Path: /rules
-          Type: Api
-      Handler: create.create
-      Policies:
-      - Ref: AllowDyanmoTables
-      Runtime: python3.7
-    Type: AWS::Serverless::Function
-  LambdaFunction:
-    Properties:
-      CodeUri: s3://sam-temp-bucket-zim/d44aee7e69c5db96801f3fa68dea2f09
-      Environment:
-        Variables:
-          TABLE_NAME:
-            Ref: AggregateTable
-      Events:
-        Stream:
-          Properties:
-            BatchSize: 100
-            StartingPosition: LATEST
-            Stream:
-              Fn::GetAtt:
-              - ChangeEventStream
-              - Arn
-          Type: Kinesis
-      Handler: index.handler
-      Policies:
-      - Ref: AllowDyanmoTables
-      Runtime: nodejs8.10
-      Timeout: 10
-    Type: AWS::Serverless::Function
-  RulesTable:
+      PrimaryKey:
+        Name: EventId
+        Type: String
+    Type: AWS::Serverless::SimpleTable
+  dbTableRules:
     Properties:
       PrimaryKey:
         Name: RuleId
         Type: String
     Type: AWS::Serverless::SimpleTable
+  kinesisEventStream:
+    Properties:
+      ShardCount: 1
+    Type: AWS::Kinesis::Stream
 Transform: AWS::Serverless-2016-10-31

@@ -3,7 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 
 Resources:
 
-  LambdaFunction:
+  LambdaFunctionContainers:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/AggregatorConsumer
@@ -14,16 +14,16 @@ Resources:
         Stream:
           Type: Kinesis
           Properties:
-            Stream: !GetAtt ChangeEventStream.Arn
+            Stream: !GetAtt kinesisEventStream.Arn
             BatchSize: 100
             StartingPosition: LATEST
       Policies:
-        - !Ref AllowDyanmoTables
+        - !Ref dbPolicyTables
       Environment:
         Variables:
-          TABLE_NAME: !Ref AggregateTable
+          TABLE_NAME: !Ref dbTableContainers
 
-  CreateRuleFunction:
+  LambdaFunctionRules:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: src/python
@@ -37,37 +37,37 @@ Resources:
             Method: post
 
       Policies:
-        - !Ref AllowDyanmoTables
+        - !Ref dbPolicyTables
       Environment:
         Variables:
-          TABLE_NAME: !Ref RulesTable
+          TABLE_NAME: !Ref dbTableRules
 
 #
 #  API:
 #    Type: AWS::S
 
 
-  ChangeEventStream:
+  kinesisEventStream:
     Type: AWS::Kinesis::Stream
     Properties:
       ShardCount: 1
 
-  AggregateTable:
+  dbTableContainers:
     Type: AWS::Serverless::SimpleTable
     Properties:
       PrimaryKey:
         Name: EventId
         Type: String
 
-  RulesTable:
+  dbTableRules:
     Type: AWS::Serverless::SimpleTable
     Properties:
       PrimaryKey:
         Name: RuleId
         Type: String
-############### IAM Resources #################################
 
-  AllowDyanmoTables:
+############### IAM Resources #################################
+  dbPolicyTables:
       Type: AWS::IAM::ManagedPolicy
       Properties:
         PolicyDocument: 
@@ -88,4 +88,4 @@ Resources:
                 - "dynamodb:PutItem"       
               Resource:
                 - "*"
-                #- !Join [ "", [ 'arn:aws:dynamodb:::table/', !Ref AggregateTable ] ]  
+                #- !Join [ "", [ 'arn:aws:dynamodb:::table/', !Ref dbTableContainers ] ]
