@@ -31,6 +31,24 @@ Resources:
     Properties:
       ShardCount: 1
     Type: AWS::Kinesis::Stream
+  CreateRuleFunction:
+    Properties:
+      CodeUri: s3://sam-temp-bucket-zim/b6ed8f93e594c3cfd50eade5b46d898a
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: RulesTable
+      Events:
+        CreateRule:
+          Properties:
+            Method: post
+            Path: /rules
+          Type: Api
+      Handler: create.create
+      Policies:
+      - Ref: AllowDyanmoTables
+      Runtime: python3.7
+    Type: AWS::Serverless::Function
   LambdaFunction:
     Properties:
       CodeUri: s3://sam-temp-bucket-zim/d44aee7e69c5db96801f3fa68dea2f09
@@ -54,4 +72,10 @@ Resources:
       Runtime: nodejs8.10
       Timeout: 10
     Type: AWS::Serverless::Function
+  RulesTable:
+    Properties:
+      PrimaryKey:
+        Name: RuleId
+        Type: String
+    Type: AWS::Serverless::SimpleTable
 Transform: AWS::Serverless-2016-10-31

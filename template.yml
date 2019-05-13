@@ -23,6 +23,30 @@ Resources:
         Variables:
           TABLE_NAME: !Ref AggregateTable
 
+  CreateRuleFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: src/python
+      Handler: create.create
+      Runtime: python3.7
+      Events:
+        CreateRule:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /rules
+            Method: post
+
+      Policies:
+        - !Ref AllowDyanmoTables
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref RulesTable
+
+#
+#  API:
+#    Type: AWS::S
+
+
   ChangeEventStream:
     Type: AWS::Kinesis::Stream
     Properties:
@@ -35,7 +59,12 @@ Resources:
         Name: EventId
         Type: String
 
-
+  RulesTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: RuleId
+        Type: String
 ############### IAM Resources #################################
 
   AllowDyanmoTables:
