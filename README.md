@@ -61,3 +61,6 @@ structure their Serverless applications:
 * [AWS Serverless Application Repository](https://aws.amazon.com/serverless/serverlessrepo/)
 * https://github.com/eon01/AWS-CheatSheet
 * https://aws.amazon.com/getting-started/tutorials/
+* jhipster import-jdl my_file1.jdl my_file2.jdl
+* mvn spring-boot:run
+* npm start
